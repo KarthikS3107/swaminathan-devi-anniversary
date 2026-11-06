@@ -75,8 +75,8 @@
   <form class="rsvp-form" id="rsvpForm">
    <label>Your name<input name="name" required autocomplete="name" placeholder="Enter your name"></label>
    <div><label>Will you be joining us?</label><div class="radio-row">
-    <label><input type="radio" name="attendance" value="Yes, attending" required> Yes, happily!</label>
-    <label><input type="radio" name="attendance" value="Unable to attend"> Sorry, can't make it</label>
+    <label><input type="radio" name="attendance" value="Yes, happily!" required> Yes, happily!</label>
+    <label><input type="radio" name="attendance" value="Sorry, can't attend"> Sorry, can't make it</label>
    </div></div>
    <label>Number of guests<select name="guests"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5 or more</option></select></label>
    <label>Phone number (optional)<input name="phone" type="tel" autocomplete="tel" placeholder="Your contact number"></label>
@@ -104,14 +104,29 @@ function closeLightbox(){lightbox.classList.remove('open');lightboxImg.src='';}
 lightbox.querySelector('button').addEventListener('click',closeLightbox);
 lightbox.addEventListener('click',e=>{if(e.target===lightbox)closeLightbox();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
-const GOOGLE_FORM_URL = ''; // Add the published Google Form URL before launch.
-document.getElementById('rsvpForm').addEventListener('submit',e=>{
+const RSVP_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby842ttkCquD6h38WbkUC1qITmxMzViAP-4w8bEAmiJWyEu2Aa3kJTph7y36gOjVb3u/exec';
+document.getElementById('rsvpForm').addEventListener('submit', async e=>{
  e.preventDefault();
+ const form=e.currentTarget;
  const status=document.getElementById('rsvpStatus');
- if(!GOOGLE_FORM_URL){status.textContent='Thank you! The RSVP form is being prepared. We will activate submissions before sharing the website.';return;}
- const data=new FormData(e.target), params=new URLSearchParams();
- for(const [key,value] of data.entries())params.append(key,value);
- window.open(GOOGLE_FORM_URL,'_blank','noopener');
+ const submitButton=form.querySelector('button[type="submit"]');
+ submitButton.disabled=true;
+ submitButton.textContent='Sending…';
+ status.textContent='Submitting your RSVP…';
+ const params=new URLSearchParams();
+ for(const [key,value] of new FormData(form).entries()) params.append(key,value);
+ try {
+   // Apps Script is cross-origin; no-cors sends the form-urlencoded POST.
+   // The response is opaque, so this confirms the request was sent, not independently verified.
+   await fetch(RSVP_WEB_APP_URL,{method:'POST',mode:'no-cors',body:params});
+   form.reset();
+   status.textContent='Thank you! Your RSVP has been submitted. We look forward to celebrating with you.';
+   submitButton.textContent='Submitted ✓';
+ } catch(error) {
+   status.textContent='We could not send your RSVP. Please try again in a moment.';
+   submitButton.disabled=false;
+   submitButton.textContent='Try again';
+ }
 });
 </script>
 </body>
